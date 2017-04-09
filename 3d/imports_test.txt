@@ -1,7 +1,10 @@
-import sys
-import math
-from os import path
+import a, b
+import c, d, d, c
+import a.b.c
+import a.b
+import this; import that
 
-def f(a):
-    if a == 0:
-        import re
+importing = True
+
+def myimport():
+    pass

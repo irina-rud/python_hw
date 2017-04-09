@@ -1,6 +1,7 @@
 import sys
 import random
 import copy
+import itertools
 
 
 def constant(f):
@@ -18,19 +19,19 @@ class creature_type(object):
     If we don't know spicification, it's trouble
     """
     @constant
-    def predator():
+    def predator(self):
         return 1
 
     @constant
-    def catch():
+    def catch(self):
         return 2
 
     @constant
-    def empty():
+    def empty(self):
         return 3
 
     @constant
-    def trouble():
+    def trouble(self):
         return -1
 
 
@@ -89,24 +90,24 @@ class Ocean:
     """Class of the real ocean with creatures and emptiness
     """
     def fill(self):
-        for i in range(self.shape_n):
+        for i in range(self.shape_width):
             line = []
-            for j in range(self.shape_m):
+            for j in range(self.shape_height):
                 if random.random() > self.random_rate:
                     if random.random() > self.random_rate:
-                        line.append(copy.deepcopy(self.predator_class))
+                        line.append(copy.deepcopy(self.predator_example))
                     else:
-                        line.append(copy.deepcopy(self.catch_class))
+                        line.append(copy.deepcopy(self.catch_example))
                 else:
                     line.append(Empty())
             self.field.append(line)
 
-    def __init__(self, shape=(10, 100), random_rate=0.5, predator_class=Predator(),
-                 catch_class=Catch()):
-        self.predator_class = predator_class
-        self.catch_class = catch_class
-        self.shape_n = shape[0]
-        self.shape_m = shape[1]
+    def __init__(self, shape=(10, 100), random_rate=0.5, predator_example=Predator(),
+                 catch_example=Catch()):
+        self.predator_example = predator_example
+        self.catch_example = catch_example
+        self.shape_width = shape[0]
+        self.shape_height = shape[1]
         self.dij = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
         self.field = []
         self.random_rate = random_rate
@@ -122,11 +123,15 @@ class Ocean:
         elif new_position != position:
             self[new_position] = self[position]
             self[position] = Empty()
+        return new_position
 
     def step(self):
-        for i in range(self.shape_n):
-            for j in range(self.shape_m):
-                self.process_cell((i, j))
+        not_changed = set(itertools.product(range(self.shape_width), range(self.shape_height)))
+        while len(not_changed) != 0:
+            position = not_changed.pop()
+            new_position = self.process_cell(position)
+            if new_position in not_changed:
+                not_changed.remove(new_position)
 
     def __getitem__(self, position):
         return self.field[position[0]][position[1]]
@@ -136,24 +141,24 @@ class Ocean:
 
     def neighbor_indices(self, pos):
         i, j = pos
-        if 0 < i < self.shape_n - 1 and 0 < j < self.shape_m - 1:
+        if 0 < i < self.shape_width - 1 and 0 < j < self.shape_height - 1:
             return [(i + di, j + dj) for (di, dj) in self.dij]
         cells = []
         for di in [-1, 0, 1]:
             for dj in [-1, 0, 1]:
                 if di == 0 and dj == 0:
                     continue
-                if i + di < 0 or i + di >= self.shape_n:
+                if i + di < 0 or i + di >= self.shape_width:
                     continue
-                if j + dj < 0 or j + dj >= self.shape_m:
+                if j + dj < 0 or j + dj >= self.shape_height:
                     continue
                 cells.append((i + di, j + dj))
         return cells
 
     def __str__(self):
         st = ""
-        for i in range(self.shape_n):
-            for j in range(self.shape_m):
+        for i in range(self.shape_width):
+            for j in range(self.shape_height):
                 if (self.field[i][j].p['id'] == creature_type.empty):
                     st += " "
                 elif (self.field[i][j].p['id'] == creature_type.catch):

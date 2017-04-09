@@ -1,45 +1,31 @@
 import re
 
-rus = 'йцукенгшщзхъёэждлорпавыфячсмитьбю'
-russ_let = ','.join(rus)
-
 pattern = re.compile(
-                        '\s*([0-9]{4}(\.[0-9]{2}\.' +
-                        '|-[0-9]{2}-' +
-                        '|/[0-9]{2}/)[0-9]{2}' +
-                        '|[0-9]{2}(\.[0-9]{2}\.' +
-                        '|-[0-9]{2}-' +
-                        '|/[0-9]{2}/)[0-9]{4}' +
-                        '|[0-9]{1,2}\s*[' + rus + ']+\s*[0-9]{4}' +
-                        ')\s*')
+    '((;|\n)\t* *import( +[^ ,,\t,\n,;]+\,)*' +
+    '( +[^ ,\t,\n,;]+) *|(\;|\n)\t* *from +[^ ,\n,\t,;]+ +)')
 
+
+def search_results(pattern, text):
+    return pattern.finditer(text)
+
+
+ans = set()
+
+h = '\n'
 while True:
     try:
         s = input()
-        if s == '':
-            break
+        # print(s)
+        h += (s + '\n')
     except:
         break
-    match = pattern.match(s)
-    try:
-        if match.start() == 0 and match.end() == len(s):
-            print('YES')
-        else:
-            print('NO')
-    except:
-        print('NO')
 
-'''
-2006.05.04 V
-2006-05-04 V
-2006/05/04 V
-04.05.2006 V
-04-05-2006 V
-04/05/2006 V
-4 мая 2006 V
-4мая2006 V
-adcd
-12.34.56
-5 мая июня
-1000 июня 03
-'''
+res = search_results(pattern, h)
+for m in res:
+    for y in m.group().split()[1:]:
+        if y == 'import':
+            continue
+        if y[-1] == ',' or y[-1] == ';':
+            y = y[:-1]
+        ans.add(y)
+print(', '.join(sorted(ans)))
