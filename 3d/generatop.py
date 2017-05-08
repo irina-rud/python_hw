@@ -4,25 +4,25 @@ import re
 from sys import stdin
 import argparse
 
-token_expression = r'(\d+|[^\W\d_]+|\s+|\W)'
+TOKEN_EXPRESSION = r'(\d+|[^\W\d_]+|\s+|\W)'
 
-words_expression = r'([^\W\d_]+)'
+WORDS_EXPRESSION = r'([^\W\d_]+)'
 
 
 def tokenize(line):
-    tokens = [token for token in re.split(token_expression, line) if token != '']
+    tokens = [token for token in re.split(TOKEN_EXPRESSION, line) if token != '']
     return tokens
 
 
 def words(line):
-    return re.findall(words_expression, line)
+    return re.findall(WORDS_EXPRESSION, line)
 
 
 class Chain:
-    def __init__(self, text, depth):
+    def __init__(self, text_tokens, depth):
         self.depth = depth
         self.chain = dict()
-        self.text = text
+        self.text_tokens = text_tokens
         if depth == 0:
             self.make_zero_chain()
         else:
@@ -31,8 +31,8 @@ class Chain:
     def make_zero_chain(self):
         dictionary = dict()
         number_of_words = 0
-        for i in range(len(self.text)):
-            for word in self.text[i]:
+        for i in range(len(self.text_tokens)):
+            for word in self.text_tokens[i]:
                 if word not in dictionary.keys():
                     dictionary[word] = 0
                 dictionary[word] += 1
@@ -42,7 +42,7 @@ class Chain:
             self.chain[''][word] = float(dictionary[word]) / number_of_words
 
     def make_chain(self):
-        for line in self.text:
+        for line in self.text_tokens:
             for j in range(self.depth, len(line)):
                 sub_string = ' '.join(line[j - self.depth:j])
                 regular_expression = ' ' + sub_string + ' ([^\W\d_]+)'
@@ -56,8 +56,8 @@ class Chain:
                         self.chain[sub_string][word] += 1
             for pattern in self.chain.keys():
                 for word in self.chain[pattern]:
-                    self.chain[pattern][word] = float(self.chain[pattern][word]) \
-                                                / len(self.chain[pattern])
+                    self.chain[pattern][word] = (float(self.chain[pattern][word]) /
+                                                 len(self.chain[pattern]))
 
     def __str__(self):
         result = list()
@@ -76,17 +76,20 @@ class Generator:
         self.max_depth = max_depth
         self.chains = list()
         self.text = text
-        self.create()
+        self.is_fitted = False
 
-    def create(self):
+    def fit(self):
+        self.is_fitted = True
         for i in range(self.depth, self.max_depth + 1):
             self.next_chain()
 
     def next_chain(self):
+        assert self.is_fitted, "Not Fitted"
         self.chains.append(Chain(self.text, self.depth))
         self.depth += 1
 
     def __str__(self):
+        assert self.is_fitted, "Not Fitted"
         concatenation = dict(self.chains[0].chain)
         for i in range(1, self.depth):
             concatenation.update(self.chains[i].chain)
@@ -100,6 +103,7 @@ class Generator:
         return '\n'.join(result)
 
     def generate_next(self, prefix):
+        assert self.is_fitted, "Not Fitted"
         depth = min(len(prefix), self.max_depth)
         previous_words = ' '.join(prefix[-depth:])
         if previous_words in self.chains[depth].chain.keys():
@@ -114,6 +118,7 @@ class Generator:
             return None
 
     def generate(self, length):
+        assert self.is_fitted, "Not Fitted"
         result = list()
         for i in range(length):
             begin = max(0, i - self.depth)
@@ -153,6 +158,7 @@ class Test:
                  + '  line: 0.50\n' \
                  + '  sentence: 0.50'
         chain = Generator(text, 1)
+        chain.fit()
         if str(chain) != result:
             print(chain)
             print()
@@ -164,6 +170,7 @@ class Test:
         text = [['First', 'test', 'sentence'],
                 ['Second', 'test', 'line']]
         chain = Generator(text, 1)
+        chain.fit()
         results = ['First test.', 'Test sentence.',
                    'Second test.', 'Test line.',
                    'Line.', 'Sentence.']
@@ -200,12 +207,14 @@ def main():
         for line in stdin:
             text.append(words(line))
         chain = Generator(text, args.depth)
+        chain.fit()
         print(chain)
     elif args.which == 'generate':
         text = list()
         for line in stdin:
             text.append(words(line))
         chain = Generator(text, args.depth)
+        chain.fit()
         print(chain.generate(args.size))
     elif args.which == 'test':
         Test()
