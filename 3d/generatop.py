@@ -108,14 +108,17 @@ class Generator:
         previous_words = ' '.join(prefix[-depth:])
         if previous_words in self.chains[depth].chain.keys():
             after_words = self.chains[depth].chain[previous_words].keys()
-            choice = random.uniform(0, 1)
-            cumulative_summ = 0
-            for word in after_words:
-                cumulative_summ += self.chains[depth].chain[previous_words][word]
-                if choice <= cumulative_summ:
-                    return word
+            return self.choose_world(after_words, depth, previous_words)
         else:
             return None
+
+    def choose_world(self, after_words, depth, previous_words):
+        choice = random.uniform(0, 1)
+        cumulative_summ = 0
+        for word in after_words:
+            cumulative_summ += self.chains[depth].chain[previous_words][word]
+            if choice <= cumulative_summ:
+                return word
 
     def generate(self, length):
         assert self.is_fitted, "Not Fitted"
